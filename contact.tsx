@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, memo } from 'react';
+
+import React, { useState, useEffect, useRef, memo, MouseEventHandler } from 'react';
 import { createRoot } from 'react-dom/client';
 
 declare const gsap: any;
@@ -19,6 +20,37 @@ const navLinks = [
   { name: 'Careers', href: '/careers.html' },
   { name: 'Contact', href: '/contact.html' },
 ];
+
+const AppLink = ({ href, className = '', children, onClick, ...props }: {
+  href: string;
+  className?: string;
+  children: React.ReactNode;
+  onClick?: MouseEventHandler<HTMLAnchorElement>;
+  [key: string]: any;
+}) => {
+    const isToggle = href === '#';
+
+    const handleClick: MouseEventHandler<HTMLAnchorElement> = (e) => {
+        if (isToggle) {
+            e.preventDefault();
+        }
+        
+        if (onClick) {
+            onClick(e);
+        }
+    };
+
+    return (
+        <a 
+            href={href} 
+            className={className} 
+            onClick={onClick ? handleClick : undefined} 
+            {...props}
+        >
+            {children}
+        </a>
+    );
+};
 
 const MobileNav = ({ isOpen, onClose }) => {
     const [isServicesOpen, setIsServicesOpen] = useState(false);
@@ -68,8 +100,7 @@ const MobileNav = ({ isOpen, onClose }) => {
     }, [isOpen, onClose]);
 
 
-    const handleServicesToggle = (e: React.MouseEvent) => {
-        e.preventDefault();
+    const handleServicesToggle = () => {
         setIsServicesOpen(prev => !prev);
     }
     
@@ -82,19 +113,9 @@ const MobileNav = ({ isOpen, onClose }) => {
                 <ul>
                     {navLinks.map(link => (
                          <li key={link.name}>
-                             <a 
+                             <AppLink 
                                 href={link.subLinks ? '#' : link.href} 
-                                onClick={(e) => {
-                                    if (link.subLinks) {
-                                        handleServicesToggle(e);
-                                    } else {
-                                        onClose();
-                                         // Since this is not an SPA, we need to manually navigate for non-hash links
-                                        if (!link.href.startsWith('#')) {
-                                            window.location.href = link.href;
-                                        }
-                                    }
-                                }}
+                                onClick={link.subLinks ? handleServicesToggle : onClose}
                                 aria-haspopup={!!link.subLinks}
                                 aria-expanded={link.subLinks ? isServicesOpen : undefined}
                                 aria-controls={link.subLinks ? `mobile-${link.name}-submenu` : undefined}
@@ -102,11 +123,11 @@ const MobileNav = ({ isOpen, onClose }) => {
                              >
                                  {link.name}
                                  {link.subLinks && <i className={`fas fa-chevron-down dropdown-indicator ${isServicesOpen ? 'open' : ''}`} aria-hidden="true"></i>}
-                             </a>
+                             </AppLink>
                              {link.subLinks && (
                                  <ul id={`mobile-${link.name}-submenu`} className={`mobile-submenu ${isServicesOpen ? 'open' : ''}`} aria-hidden={!isServicesOpen}>
                                      {link.subLinks.map(subLink => (
-                                         <li key={subLink.name}><a href={subLink.href} onClick={onClose}>{subLink.name}</a></li>
+                                         <li key={subLink.name}><AppLink href={subLink.href} onClick={onClose}>{subLink.name}</AppLink></li>
                                      ))}
                                  </ul>
                              )}
@@ -215,7 +236,7 @@ const Header = () => {
   return (
     <header className={`app-header ${scrolled ? 'scrolled' : ''}`}>
       <div className="logo">
-        <a href="/index.html" className="logo-text">Taj Design Consult</a>
+        <AppLink href="/index.html" className="logo-text">Taj Design Consult</AppLink>
       </div>
       <nav className="main-nav" aria-label="Main navigation">
         <ul>
@@ -225,7 +246,7 @@ const Header = () => {
               className={`${link.subLinks ? 'has-dropdown' : ''} ${link.name === 'Services' && isServicesDropdownOpen ? 'open' : ''}`}
               ref={link.name === 'Services' ? servicesDropdownContainerRef : null}
             >
-              <a 
+              <AppLink 
                 ref={link.name === 'Services' ? servicesToggleRef : null}
                 href={link.href}
                 id={link.name === 'Services' ? 'services-menu-toggle' : undefined}
@@ -236,12 +257,12 @@ const Header = () => {
               >
                 {link.name}
                 {link.subLinks && <i className="fas fa-chevron-down dropdown-indicator" aria-hidden="true"></i>}
-              </a>
+              </AppLink>
               {link.subLinks && (
                 <ul id="services-dropdown-menu" className="dropdown-menu" role="menu" aria-labelledby="services-menu-toggle">
                   {link.subLinks.map((subLink) => (
                     <li key={subLink.name} role="presentation">
-                      <a href={subLink.href} role="menuitem" onKeyDown={handleDropdownItemKeyDown}>{subLink.name}</a>
+                      <AppLink href={subLink.href} role="menuitem" onKeyDown={handleDropdownItemKeyDown}>{subLink.name}</AppLink>
                     </li>
                   ))}
                 </ul>
@@ -262,26 +283,6 @@ const Header = () => {
       </button>
       <MobileNav isOpen={isMobileNavOpen} onClose={closeMobileNav} />
     </header>
-  );
-};
-
-const LeftSidebar = () => {
-  return (
-    <aside className="left-sidebar">
-      <div className="sidebar-top">
-        <div className="divider" />
-        <div className="home-text">CONTACT</div>
-      </div>
-      <div className="social-icons">
-        <a href="#" aria-label="Facebook"><i className="fab fa-facebook-f" aria-hidden="true"></i></a>
-        <a href="#" aria-label="Twitter"><i className="fab fa-twitter" aria-hidden="true"></i></a>
-        <a href="#" aria-label="Instagram"><i className="fab fa-instagram" aria-hidden="true"></i></a>
-        <a href="#" aria-label="LinkedIn"><i className="fab fa-linkedin-in" aria-hidden="true"></i></a>
-      </div>
-      <div className="sidebar-footer">
-        <p>© Taj Design Consult 2024. All rights reserved.</p>
-      </div>
-    </aside>
   );
 };
 
@@ -444,4 +445,211 @@ const WhatsAppChatWidget = () => (
     >
         <div className="whatsapp-ring"></div>
         <div className="whatsapp-ring-delay"></div>
-        <i className="fab fa-whatsapp whatsapp-icon" aria-hidden="true
+        <i className="fab fa-whatsapp whatsapp-icon" aria-hidden="true"></i>
+    </a>
+);
+
+const ContactPageForm = () => {
+    const [isSubmitted, setIsSubmitted] = useState(false);
+    const [formData, setFormData] = useState({ name: '', email: '', subject: '', message: '' });
+    const [formErrors, setFormErrors] = useState<Record<string, string>>({});
+    const [touched, setTouched] = useState<Record<string, boolean>>({});
+    const successMessageRef = useRef<HTMLHeadingElement>(null);
+
+    const validate = (data: typeof formData) => {
+        const errors: Record<string, string> = {};
+        if (!data.name.trim()) errors.name = 'Full Name is required.';
+        if (!data.email.trim()) { errors.email = 'Email Address is required.'; } else if (!/\S+@\S+\.\S+/.test(data.email)) { errors.email = 'Email Address is invalid.'; }
+        if (!data.subject.trim()) errors.subject = 'Subject is required.';
+        if (!data.message.trim() || data.message.length < 20) { errors.message = 'Message must be at least 20 characters.'; }
+        return errors;
+    };
+
+    useEffect(() => { if (Object.keys(touched).length > 0) setFormErrors(validate(formData)); }, [formData, touched]);
+    useEffect(() => { if (isSubmitted) { successMessageRef.current?.focus(); successMessageRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }); }}, [isSubmitted]);
+
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => setFormData(prev => ({ ...prev, [e.target.name]: e.target.value }));
+    const handleBlur = (e: React.FocusEvent<HTMLInputElement | HTMLTextAreaElement>) => setTouched(prev => ({ ...prev, [e.target.name]: true }));
+
+    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+        e.preventDefault();
+        setTouched({ name: true, email: true, subject: true, message: true });
+        const currentErrors = validate(formData);
+        setFormErrors(currentErrors);
+
+        if (Object.keys(currentErrors).length > 0) {
+            const firstErrorField = Object.keys(currentErrors)[0];
+            if (firstErrorField) {
+                document.getElementById(firstErrorField)?.focus();
+            }
+            return;
+        }
+
+        // Simulating mailto link generation
+        const { name, email, subject, message } = formData;
+        const mailtoSubject = encodeURIComponent(subject);
+        const mailtoBody = encodeURIComponent(
+            `Name: ${name}\n` +
+            `Email: ${email}\n\n` +
+            `Message:\n${message}`
+        );
+
+        window.location.href = `mailto:info@tajdc.com?subject=${mailtoSubject}&body=${mailtoBody}`;
+
+        setIsSubmitted(true);
+    };
+
+    const handleResetForm = () => {
+        setIsSubmitted(false);
+        setFormData({ name: '', email: '', subject: '', message: '' });
+        setTouched({});
+        setFormErrors({});
+        const nameInput = document.getElementById('name');
+        if (nameInput) {
+            nameInput.focus();
+        }
+    };
+
+
+    return (
+        <div className="contact-form-container">
+            <form onSubmit={handleSubmit} className={`contact-page-form ${isSubmitted ? 'submitted' : ''}`} aria-hidden={isSubmitted} noValidate>
+                 <div className="form-row">
+                    <div className="form-group">
+                        <label htmlFor="name">Full Name</label>
+                        <input type="text" id="name" name="name" value={formData.name} onChange={handleInputChange} onBlur={handleBlur} required className={touched.name && formErrors.name ? 'invalid' : ''} aria-invalid={touched.name && !!formErrors.name} aria-describedby={touched.name && formErrors.name ? 'name-error' : undefined} />
+                        {touched.name && formErrors.name && <span id="name-error" className="error-message" role="alert">{formErrors.name}</span>}
+                    </div>
+                    <div className="form-group">
+                        <label htmlFor="email">Email Address</label>
+                        <input type="email" id="email" name="email" value={formData.email} onChange={handleInputChange} onBlur={handleBlur} required className={touched.email && formErrors.email ? 'invalid' : ''} aria-invalid={touched.email && !!formErrors.email} aria-describedby={touched.email && formErrors.email ? 'email-error' : undefined} />
+                        {touched.email && formErrors.email && <span id="email-error" className="error-message" role="alert">{formErrors.email}</span>}
+                    </div>
+                </div>
+                 <div className="form-group">
+                    <label htmlFor="subject">Subject</label>
+                    <input type="text" id="subject" name="subject" value={formData.subject} onChange={handleInputChange} onBlur={handleBlur} required className={touched.subject && formErrors.subject ? 'invalid' : ''} aria-invalid={touched.subject && !!formErrors.subject} aria-describedby={touched.subject && formErrors.subject ? 'subject-error' : undefined} />
+                    {touched.subject && formErrors.subject && <span id="subject-error" className="error-message" role="alert">{formErrors.subject}</span>}
+                </div>
+                <div className="form-group">
+                    <label htmlFor="message">Message (min. 20 characters)</label>
+                    <textarea id="message" name="message" rows={6} value={formData.message} onChange={handleInputChange} onBlur={handleBlur} required className={touched.message && formErrors.message ? 'invalid' : ''} aria-invalid={touched.message && !!formErrors.message} aria-describedby={touched.message && formErrors.message ? 'message-error' : undefined}></textarea>
+                    {touched.message && formErrors.message && <span id="message-error" className="error-message" role="alert">{formErrors.message}</span>}
+                </div>
+                <button type="submit" className="submit-btn">Send Message</button>
+            </form>
+             <div className={`success-message ${isSubmitted ? 'visible' : ''}`} aria-hidden={!isSubmitted} aria-live="polite">
+                <i className="fas fa-check-circle" aria-hidden="true"></i>
+                <h3 ref={successMessageRef} tabIndex={-1}>Your Message is Ready!</h3>
+                <p>
+                    We've prepared an email for you. Please click 'send' in your mail application to complete the process.
+                </p>
+                <button onClick={handleResetForm} className="submit-btn" style={{marginTop: '20px', width: 'auto'}}>Send Another Message</button>
+            </div>
+        </div>
+    );
+};
+
+const ContactPage = () => {
+  useEffect(() => {
+    const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (prefersReducedMotion) { document.querySelectorAll('.scroll-trigger').forEach(el => el.classList.add('visible')); return; }
+    const observer = new IntersectionObserver(
+      (entries, obs) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) { entry.target.classList.add('visible'); obs.unobserve(entry.target); }
+        });
+      }, { threshold: 0.1, rootMargin: '0px 0px -50px 0px' }
+    );
+    const elementsToReveal = document.querySelectorAll('.scroll-trigger');
+    elementsToReveal.forEach((el) => observer.observe(el));
+    return () => elementsToReveal.forEach((el) => observer.unobserve(el));
+  }, []);
+  
+  return (
+    <>
+      <section id="contact-hero" className="contact-hero-section scroll-trigger fade-up">
+        <div className="container">
+          <h1 className="scroll-trigger fade-up" style={{transitionDelay: '0.1s'}}>Get In <strong>Touch</strong></h1>
+          <p className="scroll-trigger fade-up" style={{transitionDelay: '0.2s'}}>
+            We're here to help and answer any question you might have. We look forward to hearing from you.
+          </p>
+        </div>
+      </section>
+
+      <section id="contact-details" className="content-section">
+        <div className="container">
+          <div className="contact-details-grid scroll-trigger fade-up">
+            <div className="contact-info">
+              <h2 className="section-title">Contact <strong>Information</strong></h2>
+              <div className="contact-info-blocks">
+                <div className="info-block">
+                  <div className="icon"><i className="fas fa-map-marker-alt" aria-hidden="true"></i></div>
+                  <div>
+                    <h4>Our Location</h4>
+                    <p>14th floor, Al Jazeera tower, Westbay, Doha Qatar</p>
+                  </div>
+                </div>
+                <div className="info-block">
+                  <div className="icon"><i className="fas fa-envelope" aria-hidden="true"></i></div>
+                  <div>
+                    <h4>Email Us</h4>
+                    <p><a href="mailto:info@tajdc.com">info@tajdc.com</a></p>
+                  </div>
+                </div>
+                <div className="info-block">
+                  <div className="icon"><i className="fas fa-phone" aria-hidden="true"></i></div>
+                  <div>
+                    <h4>Call Us</h4>
+                    <p><a href="tel:+97477123400">+974 7712 3400</a></p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="contact-form-section" className="contact-form-section content-section">
+         <div className="container">
+           <h2 id="contact-form-title" className="section-title scroll-trigger fade-up" style={{textAlign: 'center'}}>Send Us A <strong>Message</strong></h2>
+           <div className="scroll-trigger fade-up" role="region" aria-labelledby="contact-form-title">
+            <ContactPageForm />
+          </div>
+        </div>
+      </section>
+      <Footer />
+    </>
+  );
+};
+
+const App = () => {
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        document.body.style.backgroundColor = '#fff';
+        const timer = setTimeout(() => setLoading(false), 200);
+        return () => {
+            document.body.style.backgroundColor = '';
+            clearTimeout(timer);
+        };
+    }, []);
+
+    return (
+        <div className={`app no-sidebar ${loading ? 'loading' : ''}`}>
+            <SkipToContentLink />
+            <CustomCursor />
+            <WhatsAppChatWidget />
+            <Header />
+            <div className="main-container">
+                <main className="main-content" id="main-content" tabIndex={-1}>
+                    <ContactPage />
+                </main>
+            </div>
+        </div>
+    );
+};
+
+const container = document.getElementById('root');
+const root = createRoot(container!);
+root.render(<App />);

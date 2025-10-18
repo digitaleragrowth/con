@@ -157,7 +157,7 @@ const blogPageData = {
         category: 'Interior Design',
         date: 'August 05, 2024',
         content: [
-            'In a world of constant noise and clutter, the principles of minimalist design offer a powerful antidote. Rooted in the "less is more" philosophy, minimalism in interior design is about stripping away the non-essential to create spaces that are calm, intentional, and deeply restorative. It’s not about emptiness, but about making room for what truly matters.',
+            'In a world of constant noise and clutter, the principles of minimalist design offer a powerful antidote. Rooted in the "less is more" philosophy, interior design is about stripping away the non-essential to create spaces that are calm, intentional, and deeply restorative. It’s not about emptiness, but about making room for what truly matters.',
             'Natural light is arguably the most important element in a minimalist interior. It breathes life into a space, making it feel larger, cleaner, and more open. The design should work to maximize daylight at every turn. This can be achieved through large, unadorned windows, translucent materials, and strategically placed mirrors. Sheer, simple window treatments are preferred over heavy draperies to allow light to filter through gently.',
             'The color palette in minimalist design is typically subdued, relying on a foundation of neutrals like white, beige, and grey. This doesn\'t mean the space has to be boring. Interest and warmth are introduced through texture—the rough weave of a linen sofa, the smooth grain of a light wood floor, the soft pile of a wool rug. These tactile elements prevent the space from feeling cold or sterile.',
             'Every piece of furniture and decor in a minimalist space must earn its place. The focus is on quality over quantity. Each item is chosen for its form, function, and beauty. Clean lines, simple geometries, and high-quality craftsmanship are hallmarks of minimalist furniture. Clutter is eliminated through clever, integrated storage solutions that keep surfaces clear and the mind at ease.',
@@ -372,8 +372,8 @@ const WhatsAppChatWidget = () => (
     </a>
 );
 
-// REFACTOR: Converted to a more robust component that handles its own navigation logic for different link types (SPA, hash, toggle)
-// and correctly chains the passed `onClick` handler for additional actions.
+// REFACTORED: This component is now simplified to handle clicks correctly in a multi-page app context.
+// It removes the SPA routing logic that was preventing links to other pages from working.
 const AppLink = ({ href, className = '', children, onClick, ...props }: {
   href: string;
   className?: string;
@@ -381,34 +381,32 @@ const AppLink = ({ href, className = '', children, onClick, ...props }: {
   onClick?: MouseEventHandler<HTMLAnchorElement>;
   [key: string]: any;
 }) => {
-    const navigate = useNavigation();
-    const isExternal = href.startsWith('http') || href.startsWith('mailto:') || href.startsWith('tel:');
-    const isHomePageHashLink = href.startsWith('/index.html#');
     const isToggle = href === '#';
 
     const handleClick: MouseEventHandler<HTMLAnchorElement> = (e) => {
-        if (!isExternal) {
-            if (isToggle) {
-                e.preventDefault();
-            } else {
-                // For SPA links, we must prevent default browser navigation.
-                // For hash links, we let the `navigate` function handle it (which causes a page load),
-                // so we do not prevent default here.
-                if (!isHomePageHashLink) {
-                    e.preventDefault();
-                }
-                navigate(href);
-            }
+        // Prevent default browser action only for placeholder toggle links (used for menus).
+        if (isToggle) {
+            e.preventDefault();
         }
+        
+        // For all other links (including cross-page .html links and on-page #hash-links),
+        // we do NOT prevent default. We let the browser handle navigation.
+        // The useSmoothScroll hook will intercept on-page hash links to provide smooth scrolling.
 
-        // Always call the passed onClick handler for additional side effects (e.g., closing a menu).
+        // If an onClick handler was passed from the parent, call it for side-effects like closing menus.
         if (onClick) {
             onClick(e);
         }
     };
 
     return (
-        <a href={href} className={className} onClick={handleClick} {...props}>
+        <a 
+            href={href} 
+            className={className} 
+            // Only attach the custom click handler if it's needed (e.g., for menu toggles).
+            onClick={onClick ? handleClick : undefined} 
+            {...props}
+        >
             {children}
         </a>
     );
